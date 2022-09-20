@@ -287,9 +287,9 @@ func dataNetworkRead(ctx context.Context, d *schema.ResourceData, meta interface
 	if site == "" {
 		site = c.site
 	}
-	if (name == "" && id == "") || (name != "" && id != "") {
-		return diag.Errorf("One of 'name' OR 'id' is required")
-	}
+	// if (name == "" && id == "") || (name != "" && id != "") {
+	// 	return diag.Errorf("One of 'name' OR 'id' is required")
+	// }
 
 	networks, err := c.c.ListNetwork(ctx, site)
 	if err != nil {
@@ -362,6 +362,64 @@ func dataNetworkRead(ctx context.Context, d *schema.ResourceData, meta interface
 
 			return nil
 		}
+		dhcpDNS := []string{}
+		for _, dns := range []string{
+			n.DHCPDDNS1,
+			n.DHCPDDNS2,
+			n.DHCPDDNS3,
+			n.DHCPDDNS4,
+		} {
+			if dns == "" {
+				continue
+			}
+			dhcpDNS = append(dhcpDNS, dns)
+		}
+		wanDNS := []string{}
+		for _, dns := range []string{
+			n.WANDNS1,
+			n.WANDNS2,
+			n.WANDNS3,
+			n.WANDNS4,
+		} {
+			if dns == "" {
+				continue
+			}
+			wanDNS = append(wanDNS, dns)
+		}
+
+		d.SetId(n.ID)
+		d.Set("site", site)
+		d.Set("name", n.Name)
+		d.Set("purpose", n.Purpose)
+		d.Set("vlan_id", n.VLAN)
+		d.Set("subnet", cidrZeroBased(n.IPSubnet))
+		d.Set("network_group", n.NetworkGroup)
+		d.Set("dhcp_start", n.DHCPDStart)
+		d.Set("dhcp_stop", n.DHCPDStop)
+		d.Set("dhcp_enabled", n.DHCPDEnabled)
+		d.Set("dhcp_lease", n.DHCPDLeaseTime)
+		d.Set("dhcpd_boot_enabled", n.DHCPDBootEnabled)
+		d.Set("dhcpd_boot_server", n.DHCPDBootServer)
+		d.Set("dhcpd_boot_filename", n.DHCPDBootFilename)
+		d.Set("domain_name", n.DomainName)
+		d.Set("igmp_snooping", n.IGMPSnooping)
+		d.Set("dhcp_dns", dhcpDNS)
+		d.Set("ipv6_interface_type", n.IPV6InterfaceType)
+		d.Set("ipv6_static_subnet", n.IPV6Subnet)
+		d.Set("ipv6_pd_interface", n.IPV6PDInterface)
+		d.Set("ipv6_pd_prefixid", n.IPV6PDPrefixid)
+		d.Set("ipv6_ra_enable", n.IPV6RaEnabled)
+		d.Set("wan_ip", n.WANIP)
+		d.Set("wan_netmask", n.WANNetmask)
+		d.Set("wan_gateway", n.WANGateway)
+		d.Set("wan_type", n.WANType)
+		d.Set("wan_dns", wanDNS)
+		d.Set("wan_networkgroup", n.WANNetworkGroup)
+		d.Set("wan_egress_qos", n.WANEgressQOS)
+		d.Set("wan_username", n.WANUsername)
+		d.Set("x_wan_password", n.XWANPassword)
+
+		return nil
 	}
 
 	return diag.Errorf("network not found with name %s", name)
